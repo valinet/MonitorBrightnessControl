@@ -61,8 +61,8 @@ IDI_ICON1               ICON                    "icon.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1
- PRODUCTVERSION 1,0,0,1
+ FILEVERSION 1,0,0,2
+ PRODUCTVERSION 1,0,0,2
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -79,12 +79,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "VALINET Solutions SRL"
             VALUE "FileDescription", "Monitor Brightness Control"
-            VALUE "FileVersion", "1.0.0.1"
+            VALUE "FileVersion", "1.0.0.2"
             VALUE "InternalName", "MonitorB.exe"
-            VALUE "LegalCopyright", "Copyright (C) 2021 VALINET Solutions SRL. All rights reserved."
+            VALUE "LegalCopyright", "Copyright (C) 2023 VALINET Solutions SRL. All rights reserved."
             VALUE "OriginalFilename", "MonitorB.exe"
             VALUE "ProductName", "Monitor Brightness Control"
-            VALUE "ProductVersion", "1.0.0.1"
+            VALUE "ProductVersion", "1.0.0.2"
         END
     END
     BLOCK "VarFileInfo"

@@ -40,6 +40,8 @@ DEFINE_GUID(__uuidof_ITaskbarList,
     0x00, 0x60, 0x97, 0xC9, 0xA0, 0x90
 );
 
+HWND hMainWindow;
+
 BOOL CALLBACK MonitorBrightness(
     HMONITOR unnamedParam1,
     HDC unnamedParam2,
@@ -279,7 +281,7 @@ LRESULT CALLBACK WindowProc(
             val
         );
         // disable dashed outline
-        SendMessage(hWndTrack, WM_CHANGEUISTATE, (WPARAM)(0x10001), (LPARAM)(0));
+        if (IsWindowVisible(hwnd)) SendMessage(hWndTrack, WM_CHANGEUISTATE, (WPARAM)(0x10001), (LPARAM)(0));
         break;
     }
     case WM_GETMINMAXINFO:
@@ -364,6 +366,41 @@ HWND WINAPI CreateTrackbar(
     SetFocus(hwndTrack);
 
     return hwndTrack;
+}
+
+LRESULT CALLBACK LowLevelMouseProc(
+    _In_ int    nCode,
+    _In_ WPARAM wParam,
+    _In_ LPARAM lParam
+) 
+{
+    NOTIFYICONIDENTIFIER nid;
+    nid.cbSize = sizeof(nid);
+    nid.hWnd = hMainWindow;
+    nid.uID = 0;
+    nid.guidItem = GUID_NULL;
+    RECT rc;
+    PMSLLHOOKSTRUCT pMsll = (PMSLLHOOKSTRUCT)lParam;
+
+    if (nCode == HC_ACTION && 
+        (wParam == WM_MOUSEWHEEL || wParam == WM_MOUSEHWHEEL) &&
+        SUCCEEDED(Shell_NotifyIconGetRect(&nid, &rc)) &&
+        PtInRect(&rc, pMsll->pt) &&
+        RegisterWindowMessageW(L"ToolbarWindow32") == GetClassLongPtrW(WindowFromPoint(*(POINT*)&rc), GCW_ATOM))
+    {
+        int factor = GET_WHEEL_DELTA_WPARAM(pMsll->mouseData) / 120;       
+        LONG_PTR ptr = GetWindowLongPtrW(hMainWindow, GWLP_USERDATA);
+        HWND hWndTrack = *((HWND*)(ptr));
+        int val = SendMessageW(hWndTrack, TBM_GETPOS, 0, 0);
+        val += (factor * STEP);
+        if (val > 100) val = 100;
+        if (val < 0) val = 0;
+        if (TBS_ORIENT == TBS_VERT) val = 100 - val;
+        SendMessageW(hWndTrack, TBM_SETPOS, IsWindowVisible(hMainWindow), (LPARAM)val);
+        PostMessageW(hMainWindow, WM_VSCROLL, 0, 0);
+    }
+
+    return CallNextHookEx(0, nCode, wParam, lParam);
 }
 
 int WINAPI wWinMain(
@@ -456,6 +493,7 @@ int WINAPI wWinMain(
         hInstance,
         &hWndTrack
     );
+    hMainWindow = hWnd;
     SetWindowBlur(hWnd);
     hWndTrack = CreateTrackbar(
         hInstance,
@@ -483,6 +521,7 @@ int WINAPI wWinMain(
         &tnid
     );
 
+    HHOOK hHook = SetWindowsHookExW(WH_MOUSE_LL, LowLevelMouseProc, NULL, 0);
     MSG msg;
     BOOL bRet;
     while ((bRet = GetMessage(
@@ -502,6 +541,7 @@ int WINAPI wWinMain(
             DispatchMessage(&msg);
         }
     }
+    UnhookWindowsHookEx(hHook);
 
     Shell_NotifyIcon(
         NIM_DELETE,
